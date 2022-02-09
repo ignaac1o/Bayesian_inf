@@ -176,12 +176,12 @@ In the second plot, we can see that for a value around 22.5 of sodium-to-potassi
 
 ## Prediction
 
-Now that we have trained the model, we can predict the values using the test dataset. Let's observed what happens for example with the rows 1 and 7:
+Now that we have trained the model, we can predict the values using the test set. Let's observed what happens for example with rows 1 and 7:
 
 ```{r predictions17, echo = FALSE, include=TRUE}
-header = names(predict(model,drugs[trainSet,],type="raw")[1,])
-row1 = round(predict(model,drugs[trainSet,],type="raw")[1,], digits=2)
-row7 = round(predict(model,drugs[trainSet,],type="raw")[7,], digits=2)
+header = names(predict(model,drugs[testSet,],type="raw")[1,])
+row1 = round(predict(model,drugs[testSet,],type="raw")[1,], digits=2)
+row7 = round(predict(model,drugs[testSet,],type="raw")[7,], digits=2)
 predicts.df <- rbind(row1, row7)
 colnames(predicts.df) <- header
 
@@ -192,7 +192,7 @@ knitr::kable(predicts.df, digits = 3,
 
 ```
 
-We can see in Table \ref{tab:predictions17} that the prediction for the first observation on the test set is 100% associated with drug Y. For the seventh observation, we can see that the prediction classifies the data as drug C with 77% of probability, so it is the most likely drug for that patient.
+We can see in Table \ref{tab:predictions17} that the prediction for the first observation on the test set is 0.44 likelihood to be associated with drug C, 0.37 with drug X and 0.19 with drug Y. For the seventh observation, we can see that the prediction classifies the data as drug X 97% of the times and as drug Y for the remaining percentage of times.
 
 In the Table \ref{tab:confusion-matrix} it is visualize the confusion matrix associated to the prediction of the test set. We can see how well our model classifies our test data, there are only 3 wrong classifications: 
 
