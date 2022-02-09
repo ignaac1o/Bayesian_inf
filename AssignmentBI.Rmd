@@ -1,0 +1,224 @@
+---
+title: "Practice 0: Naive Bayes"
+author: "Ignacio Almodóvar, Luis Ángel Rodriguez Garcia"
+date: "2/9/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+```{r, include=FALSE}
+if (!require(dplyr)) install.packages("dplyr")
+  library(dplyr)
+if (!require(scales)) install.packages("scales")
+  library(scales)
+if (!require(kableExtra)) install.packages("kableExtra")
+  library(kableExtra)
+if (!require(magrittr)) install.packages("magrittr")
+  library(magrittr)
+if (!require(e1071)) install.packages("e1071")
+  library(e1071)
+if (!require(caret)) install.packages("caret")
+  library(caret)
+
+```
+
+We have chosen a dataset located in [kaggle](https://www.kaggle.com/prathamtripathi/drug-classification). It contains information about the classification of certain drug types based on different features such as the age, the sex, the blood pressure levels, the cholesterol levels and the sodium-to-potassium ratio.
+
+In our case, the parameter that we want to estimate is $\theta$ and its support are formed by six different values: *drugA*, *drugB*, *drugC*, *drugD*, *drugX* and *drugY*. In Bayesian analysis the first thing to do is to calculate the prior of $\theta$, so let's plot the frequency table:
+
+```{r, echo = FALSE, include=TRUE}
+drugs <- read.csv("drug200.csv", header = T)
+#Target variable is the drug type A,B,C,X,Y
+freq.table <- table(drugs$Drug)
+freq.df <- cbind("Type"=names(freq.table), 
+                 "Frequency"=as.vector(freq.table), 
+                 "Probability"=as.vector(freq.table)/sum(as.vector(freq.table)))
+knitr::kable(freq.df, caption = "Drug Type Table Frequency") %>% 
+  column_spec(1, bold=TRUE) %>% row_spec(0, bold=TRUE) %>% 
+  kable_styling(latex_options = "HOLD_position")
+
+```
+
+In the table above, we can obtain the prior probability using the empirical Bayesian technique: $\pi(\theta=drugA)= \frac{23}{200} = 0.115$, $\pi(\theta=drugB)= \frac{16}{200} = 0.08$, $\pi(\theta=drugC)= \frac{16}{200} = 0.08$, $\pi(\theta=drugX)= \frac{54}{200} = 0.27$ and $\pi(\theta=drugY)= \frac{91}{200} = 0.455$.
+
+If we are not data-driven, we can set the same probability for each type of drug: $\pi(\theta=drugA)=\pi(\theta=drugB)=\pi(\theta=drugC)=\pi(\theta=drugX)=\pi(\theta=drugY) = \frac{1}{5} = 0.2$. This is the case of using an orthodox Bayesian technique.
+
+```{r, include=FALSE}
+# Function to check NA
+missingValues=function(data){
+  count=0
+  a=cbind(lapply(lapply(data, is.na), sum))
+  for(i in 1:ncol(data)){
+    if(a[i]!=0){
+      cat("There are", a[i], "missing values in column ", i,"\n" )
+      count=count+1
+    }
+  }  
+  if(count==0){
+    cat("There are no missing values in this dataset")
+  }
+}
+
+missingValues(drugs)
+
+# Split into train and test
+set.seed(17)
+index=nrow(drugs)
+trainSet=(1:index)%in%sample(index,floor(index*0.7))
+testSet=!trainSet
+
+```
+
+We have checked that this dataset does not contain missing values in any of their variables and we have split the dataset into train (70% of data) and test (the remaining 30%).
+
+# Naive Bayes Classifier
+
+Now that we have split the data into train and set, we are going to train the model using the Naive Bayes classifier. 
+
+```{r, include=FALSE}
+#build the model
+model=naiveBayes(Drug~.,data=drugs,subset=trainSet)
+
+```
+
+In Table \ref{tab:apriory_prob} we can see that the a-priory probabilities obtained from the model are pretty much similar to those ones we got by means of the whole dataset.
+
+```{r apriory_prob, echo = FALSE, include=TRUE}
+apriory.prob <- as.vector(model[1]$apriori)/sum(as.vector(model[1]$apriori))
+apriory.prob <- round(apriory.prob, digits=2)
+apriory.df <- cbind("Type"=names(model[1]$apriori), 
+                 "Probability"=apriory.prob)
+knitr::kable(apriory.df, digits = 2, caption = "A-priory probabilities") %>% 
+  column_spec(1, bold=TRUE) %>% row_spec(0, bold=TRUE) %>% 
+  kable_styling(latex_options = "HOLD_position")
+
+```
+
+## Quantitative predictors
+
+In table \ref{tab:conditional_prob_sex} we can see that the qualitative values of the variable sex are not distinguished by any type of drug (A, B, C, X or Y) because the probability in all the cases are close or equal to 0.5.
+
+```{r conditional_prob_sex, echo = FALSE, include=TRUE}
+knitr::kable(model[2]$tables$Sex, digits = 2, 
+             caption = "Conditional Probability Sex") %>% 
+  column_spec(1, bold=TRUE) %>% row_spec(0, bold=TRUE) %>% 
+  kable_styling(latex_options = "HOLD_position")
+
+```
+
+In table \ref{tab:conditional_prob_bp} we can see that the qualitative values of the blood pressure variable are distinguished by some types of drugs accurately. For example: 
+
+- Given drug A or B allways will be a high blood pressure
+- Given drug C we will get a low blood preasure
+- Given drug X we will not get a high pressure, 67% of times we will obtained a normal blood pressure.
+- Given drug Y we will get a high blood pressure 43% of times and low blood pressure 32% of times.
+
+Therefore, the variable blood pressure is much more informative than the variable sex.
+
+```{r conditional_prob_bp, echo = FALSE, include=TRUE}
+knitr::kable(model[2]$tables$BP, digits = 2, 
+             caption = "Conditional Probability Blood Pressure") %>% 
+  column_spec(1, bold=TRUE) %>% row_spec(0, bold=TRUE) %>% 
+  kable_styling(latex_options = "HOLD_position")
+
+```
+
+In table \ref{tab:conditional_prob_cholesterol} we can see that the qualitative value *HIGH* of the cholesterol is distinguished accurately by drug C. Nevertheless, other probabilities are closed to 0.5 so they are not significant. The blood pressure variable is more informative than this one as we can distinguish many more factors given a specific type of drug.
+
+```{r conditional_prob_cholesterol, echo = FALSE, include=TRUE}
+knitr::kable(model[2]$tables$Cholesterol, digits = 2, 
+             caption = "Conditional Probability Cholesterol") %>% 
+  column_spec(1, bold=TRUE) %>% row_spec(0, bold=TRUE) %>% 
+  kable_styling(latex_options = "HOLD_position")
+
+```
+
+## Qualitative predictors
+
+Let's look at the following plots which represent for each type of drug the likelihood depending on the values of the quantitative variables *Age* and *Na_to_K*:
+
+```{r echo = FALSE, include=TRUE, fig.width=7}
+quantitative.vars <- drugs %>% dplyr::select(where(is.numeric))
+mms=apply(quantitative.vars, 
+          MARGIN=2, 
+          function(x) unlist(by(x,drugs$Drug,mean)))
+sds=apply(quantitative.vars, 
+          MARGIN=2, 
+          function(x) unlist(by(x,drugs$Drug,sd)))
+
+par(mfrow=c(1,2))
+colnames.var <- colnames(mms)
+colnames.var[2] <- "Sodium-to-Potassium"
+for(i in 1:2){
+  rrx=range(c(mms[,i]+3*sds[,i], mms[,i]-3*sds[,i]))
+  rry=c(0,max(dnorm(mms[,i], mms[,i], sds[,i]+0.0001)))
+  plot(0,1, type="n", xlab=colnames.var[i], 
+       ylab="Normal Density", xlim=rrx, ylim=rry)
+  ss=seq(rrx[1],rrx[2],length.out = 100)
+  for(j in 1:5) points(ss,dnorm(ss,mms[j,i],sds[j,i]),type="l",col=j)
+  if(i==1)
+    legend(x="topleft", legend=levels(factor(drugs$Drug)), fill = c(1:5))
+  else
+    legend(x="topright", legend=levels(factor(drugs$Drug)), fill = c(1:5))
+}
+
+```
+
+As we can see above in the first plot, for people at the age of 65 the more likely drug associated is the B one meanwhile for people around 35 the more likely drug associated is the A one. In addition, it looks like the drug C, X and Y have the same likelihood based on the quantitative variable *Age*.
+
+In the second plot, we can see that for a value around 22.5 of sodium-to-potassium we get in all the cases the drug Y. Therefore, this variable is so informative for classifying the drug Y. For a value around 12.5 we can see that the likelihood of getting some drug A, B, C, or X is the same.
+
+
+## Prediction
+
+Now that we have trained the model, we can predict the values using the test dataset. Let's observed what happens for example with the rows 1 and 7:
+
+```{r predictions17, echo = FALSE, include=TRUE}
+header = names(predict(model,drugs[trainSet,],type="raw")[1,])
+row1 = round(predict(model,drugs[trainSet,],type="raw")[1,], digits=2)
+row7 = round(predict(model,drugs[trainSet,],type="raw")[7,], digits=2)
+predicts.df <- rbind(row1, row7)
+colnames(predicts.df) <- header
+
+knitr::kable(predicts.df, digits = 3, 
+             caption = "Predictions: Rows 1 and 7") %>% 
+  column_spec(1, bold=TRUE) %>% row_spec(0, bold=TRUE) %>% 
+  kable_styling(latex_options = "HOLD_position")
+
+```
+
+We can see in Table \ref{tab:predictions17} that the prediction for the first observation on the test set is 100% associated with drug Y. For the seventh observation, we can see that the prediction classifies the data as drug C with 77% of probability, so it is the most likely drug for that patient.
+
+In the Table \ref{tab:confusion-matrix} it is visualize the confusion matrix associated to the prediction of the test set. We can see how well our model classifies our test data, there are only 3 wrong classifications: 
+
+- Two predictions classifying drug X when it is drug C 
+- One prediction classifying drug Y when it is C
+
+```{r confusion-matrix, echo = FALSE, include=TRUE}
+#Maximum a posteriori
+drug_prediction=predict(model,drugs[testSet,])
+#Now we see the drug prediction for each variable
+
+#Validate the model
+confussion.matrix <- table(drug_prediction, drugs$Drug[testSet])
+knitr::kable(confussion.matrix, caption = "Confussion matrix") %>% 
+  column_spec(1, bold=TRUE) %>% row_spec(0, bold=TRUE) %>% 
+  kable_styling(latex_options = "HOLD_position")
+
+```
+
+
+\newpage
+# Apendix
+
+## Code
+
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+
+
+```

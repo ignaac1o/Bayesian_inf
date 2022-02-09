@@ -3,7 +3,7 @@ library(dplyr)
 library(e1071)
 library(caret)
 
-drugs=read.csv("drug200.csv.xls",header = T)
+drugs=read.csv("drug200.csv",header = T)
 
 #Target variable is the drug type A,B,C,X,Y
 table(drugs$Drug)
