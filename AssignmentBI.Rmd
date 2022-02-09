@@ -1,6 +1,6 @@
 ---
 title: "Practice 0: Naive Bayes"
-author: "Ignacio Almodóvar, Luis Ángel Rodriguez Garcia"
+author: "Ignacio Almodóvar, Luis Ángel Rodríguez García"
 date: "2/9/2022"
 output: pdf_document
 ---
