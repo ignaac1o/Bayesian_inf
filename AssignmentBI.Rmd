@@ -82,7 +82,7 @@ Now that we have split the data into train and set, we are going to train the mo
 
 ```{r, include=FALSE}
 #build the model
-model=naiveBayes(Drug~.,data=drugs,subset=trainSet)
+model <- naiveBayes(Drug ~ ., data=drugs, subset=trainSet)
 
 ```
 
@@ -99,7 +99,7 @@ knitr::kable(apriory.df, digits = 2, caption = "A-priory probabilities") %>%
 
 ```
 
-## Quantitative predictors
+## Qualitative predictors
 
 In table \ref{tab:conditional_prob_sex} we can see that the qualitative values of the variable sex are not distinguished by any type of drug (A, B, C, X or Y) because the probability in all the cases are close or equal to 0.5.
 
@@ -138,18 +138,19 @@ knitr::kable(model[2]$tables$Cholesterol, digits = 2,
 
 ```
 
-## Qualitative predictors
+## Quantitative predictors
 
-Let's look at the following plots which represent for each type of drug the likelihood depending on the values of the quantitative variables *Age* and *Na_to_K*:
+Let's look at the following plots which represent for each type of drug the likelihood depending on the values of the covariates *Age* and *Na_to_K*. Notice that we are using the train set as we want to know how the Naive Bayes model predicts.
 
-```{r echo = FALSE, include=TRUE, fig.width=7}
-quantitative.vars <- drugs %>% dplyr::select(where(is.numeric))
+```{r echo = FALSE, include=TRUE, fig.width=8, fig.height=5}
+quantitative.vars <- drugs[trainSet,] %>% dplyr::select(where(is.numeric))
+
 mms=apply(quantitative.vars, 
           MARGIN=2, 
-          function(x) unlist(by(x,drugs$Drug,mean)))
+          function(x) unlist(by(x,drugs[trainSet,]$Drug,mean)))
 sds=apply(quantitative.vars, 
           MARGIN=2, 
-          function(x) unlist(by(x,drugs$Drug,sd)))
+          function(x) unlist(by(x,drugs[trainSet,]$Drug,sd)))
 
 par(mfrow=c(1,2))
 colnames.var <- colnames(mms)
@@ -162,16 +163,20 @@ for(i in 1:2){
   ss=seq(rrx[1],rrx[2],length.out = 100)
   for(j in 1:5) points(ss,dnorm(ss,mms[j,i],sds[j,i]),type="l",col=j)
   if(i==1)
-    legend(x="topleft", legend=levels(factor(drugs$Drug)), fill = c(1:5))
+    legend(x="topleft", 
+           legend=levels(factor(drugs[trainSet,]$Drug)), 
+           fill = c(1:5))
   else
-    legend(x="topright", legend=levels(factor(drugs$Drug)), fill = c(1:5))
+    legend(x="topright", 
+           legend=levels(factor(drugs[trainSet,]$Drug)), 
+           fill = c(1:5))
 }
 
 ```
 
-As we can see above in the first plot, for people at the age of 65 the more likely drug associated is the B one meanwhile for people around 35 the more likely drug associated is the A one. In addition, it looks like the drug C, X and Y have the same likelihood based on the quantitative variable *Age*.
+As we can see above in the first plot, for people at the age of 65 the more likely drug associated is the B one meanwhile for people around 33 years old the more likely drug associated is the A one. In addition, drug C is the most used one for people at the age of 50. Lastly, it looks like drugs X and Y have the same likelihood to use in patients based on the quantitative variable *Age*.
 
-In the second plot, we can see that for a value around 22.5 of sodium-to-potassium we get in all the cases the drug Y. Therefore, this variable is so informative for classifying the drug Y. For a value around 12.5 we can see that the likelihood of getting some drug A, B, C, or X is the same.
+In the second plot, we can see clearly that for a value around 22.5 of sodium-to-potassium we get in all the cases the drug Y. Therefore, this variable is so informative for classifying the drug Y. Moreover, we can see that for levels of Na-to-K of almost 10, the most likely drugs is the C one. At last, for a value around 12.5 we can see that the likelihood of getting some drug A, B, or X is the same.
 
 
 ## Prediction
