@@ -11,20 +11,133 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+library(datasets)
+data=warpbreaks
 ```
 
-## Including Plots
+We want to provide a conditional estimation on the number of brakes for different types of threads. As we are measuring the number of breaks we can consider that our model follows a poisson distribution, being the count the number of breaks in a whole roll.
 
-You can also embed plots, for example:
+The properties of a poisson are:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+$$E[Y|\theta]=\theta$$
+$$Var[Y|\theta]=\theta$$
+From the prior we know that:
+
+
+$$\theta \sim gamma(a,b)$$
+
+$$Y_1,...,Y_n | \theta \sim Poisson(\theta)$$
+Within this two function and using the conjugate, we get that:
+
+$$\{\theta|Y_1,...,Y_n\}\sim gamma(a+\sum_{i=1}^{n}Y_i,b+n)$$
+
+
+## Plots
+
+```{r}
+ggplot(data,aes(x=breaks, fill= wool,alpha=0.5)) + geom_density() + facet_wrap(~tension)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+# Empirical distributions
+
+```{r}
+g1 = data %>% dplyr::filter(wool=="A" & tension=="L")
+g2 = data %>% dplyr::filter(wool=="A" & tension=="M")
+g3 = data %>% dplyr::filter(wool=="A" & tension=="H")
+g4 = data %>% dplyr::filter(wool=="B" & tension=="L")
+g5 = data %>% dplyr::filter(wool=="B" & tension=="M")
+g6 = data %>% dplyr::filter(wool=="B" & tension=="H")
+```
+
+
+
+$$Y_{1,1}...Y_{n,1} | \theta \sim i.id. Poisson(\theta_{1})$$
+$$Y_{2,1}...Y_{n,2} | \theta \sim i.id. Poisson(\theta_{2})$$
+$$Y_{3,1}...Y_{n,6} | \theta \sim i.id. Poisson(\theta_{6})$$
+
+
+```{r}
+n1=nrow(g1)
+sy1=sum(g1$breaks)
+mu1=mean(g1$breaks)
+mo1=modal(g1$breaks)
+
+n2=nrow(g2)
+sy2=sum(g2$breaks)
+mu2=mean(g2$breaks)
+
+n3=nrow(g3)
+sy3=sum(g3$breaks)
+mu3=mean(g3$breaks)
+  
+n4=nrow(g4)
+sy4=sum(g4$breaks)
+mu4=mean(g4$breaks)
+
+n5=nrow(g5)
+sy5=sum(g5$breaks)
+mu5=mean(g5$breaks)
+
+n6=nrow(g6)
+sy6=sum(g6$breaks)
+mu6=mean(g6$breaks)
+```
+
+
+Without any information of the sample we can assume that the mean number of breaks is 25. Therefore we can assume that our $\theta$ is distributed as $\theta \sim gamma(5,5.2)$
+
+
+```{r}
+a=5
+b=5.2
+
+posterior_mean=function(sy,n){
+  return((a+sy)/(b+n))
+}
+
+
+posterior_mode=function(sy,n){
+  return((a+sy-1)/(b+n))
+}
+
+#posterior mean for group A-L
+posterior_mean(sy1,n1)
+
+#posterior mode for group A-M
+posterior_mode(sy2,n2)
+
+
+#CI 95% for group A-M
+qgamma(c(0.025,0.975),a+sy1,b+n2)
+```
+
+
+
+
+
+```{r}
+modea <- function(x) {
+   return(as.numeric(names(which.max(table(x)))))
+}
+
+a1=modea(g1$breaks)
+a2=modea(g2$breaks)
+a3=modea(g3$breaks)
+a4=modea(g4$breaks)
+a5=modea(g5$breaks)
+a6=modea(g6$breaks)
+
+vector=c(a1,a2,a3,a4,a5,a6)
+mean(vector)
+
+```
+ We can assume a=23,b=1
+
+
+
+
+
+
+
