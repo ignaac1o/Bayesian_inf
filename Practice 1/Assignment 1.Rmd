@@ -1,6 +1,6 @@
 ---
 title: "Practice 1"
-author: "Luis Angel Rodriguez Garcia"
+author: "Ignacio Almodóvar Cárdenas & Luis Angel Rodriguez Garcia"
 date: "2/22/2022"
 output: pdf_document
 ---
