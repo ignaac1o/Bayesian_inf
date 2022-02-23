@@ -1,172 +1,209 @@
 ---
-title: "Practice 1"
-author: "Ignacio Almodóvar Cárdenas & Luis Angel Rodriguez Garcia"
-date: "2/22/2022"
+title: "Practice 1: Number of Breaks"
+author: "Ignacio Almodóvar Cárdenas & Luis Ángel Rodríguez García"
+date: "22/02/2022"
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(ggplot2)
-library(dplyr)
-library(magrittr)
 ```
 
 # Introduction
 
-```{r}
+```{r include = FALSE}
+
+library(ggplot2)
+library(dplyr)
+library(magrittr)
 library(datasets)
-data=warpbreaks
+library(scales)
+library(kableExtra)
+
 ```
 
 We want to provide a conditional estimation on the number of breaks for different types of threads. Therefore, as the data provided contains observations from different groups of threads, we are going to split them into six different groups. This way we can apply Bayesian Inference to obtain insights for each type of group.
 
-The dataset contains 3 variables, 
+The dataset contains 3 variables:
 
-- Nb of breaks (continuous variable)
-- Wool, which is categorical variable with levels A and B.
-- Tension. Another categorical variable that indicates the tension of the thread (L,M and H)
+- Number of breaks (continuous variable)
+- Wool (categorical variable that defined two types of the wool: *A* and *B*)
+- Tension (categorical variable that indicates the tension of the thread: *L* -low-, *M* -medium- and *H* -high-)
 
-As we just mentioned, we are going to split the data into 6 different groups. Therefore we will have one group for wool A with Low tension, another for wool A with Medium tension, wool A with high tension...
+As we just mentioned, we are going to split the data into 6 different groups. Therefore we will have one group for wool A with low tension, another for wool A with medium tension, wool A with high tension and so on.
 
-Once we have our groups well defined, we can start to apply Bayesian Inference. As we want to have more knowledge about the mean number of breaks during weaving for different configurations, we can model our problem as a Poisson distribution, being the count the number of breaks. Therefore, 
+```{r echo = FALSE, include=TRUE}
+data <- warpbreaks
 
-$$Y_{1,1}...Y_{n,1} | \theta_1 \sim i.id. Poisson(\theta_{1})$$
-$$Y_{1,2}...Y_{n,2} | \theta_2 \sim i.id. Poisson(\theta_{2})$$
-$$.$$
-$$.$$
-$$.$$
+data <- data %>% 
+  mutate(type = paste(wool, tension, sep="")) %>% 
+  select(c('breaks', 'type'))
 
-$$Y_{1,6}...Y_{n,6} | \theta_6 \sim i.id. Poisson(\theta_{6})$$
+ggplot(data, aes(x=breaks, fill= type)) + 
+  geom_bar() + 
+  facet_wrap(~type)
+```
+
+In the plots above, we can see the probability mass function of each wool type and tension. in the case of the wool *A* and tension *high*, there is not a unique mode. In the reaming types associated with their tensions there are just a few modes (or just one).
+
+# Bayesian inference
+
+Once we have our groups well defined, we can start to apply Bayesian Inference. As we want to have more knowledge about the mean number of breaks during weaving for different configurations, we can represent our problem with a ***Poisson* model**, being the count the number of breaks. Therefore, 
+
+$$
+Y_{1_{AL}},\dots ,Y_{n_{AL}} | \theta_{AL} \sim i.i.d. Poisson(\theta_{AL})
+$$
+
+
+$$
+Y_{1_{AM}},\dots ,Y_{n_{AM}} | \theta_{AM} \sim i.i.d. Poisson(\theta_{AM})
+$$
+
+$$\vdots$$
+
+$$Y_{1_{BH}},\dots ,Y_{n_{BH}} | \theta_{BH} \sim i.i.d. Poisson(\theta_{BH})$$
+
 
 We also know that for a poisson distribution, both mean and variances are:
 
-$$E[Y|\theta]=\theta$$
-$$Var[Y|\theta]=\theta$$
-However, we do not have any information about $\theta$, therefore we have to estimate it. The only knowledge we have about it is that from the prior we can assume that that:
+$$\mathop{\mathbb{E}}[Y|\theta]=\theta \quad \mathop{\mathbb{V}ar}[Y|\theta]=\theta$$
+
+## Prior distribution
+
+However, we do not have any information about $\theta$, it is some unknown number between 0 and $\infty$. Then, we have to defined this parameter using other methods but not insights that come from the sample. The only knowledge we have about it is that from the prior we can assume that:
 
 $$\theta \sim gamma(a,b)$$
-Therefore, we have to assign values for both "a" and "b". For a Gamma distribution we know that:
 
-$$E[\theta]=\frac{a}{b}$$
+In order to implement it, we have to assign values for both parameters *a* and *b*. For a Gamma distribution we know that:
 
-From the prior we have to guess the mean number of breaks. As we do not have explicit information from \theta we have to set it in a rough way. For that we are going to use 
+$$\mathop{\mathbb{E}}[\theta]=\frac{a}{b}$$
 
-....
+From the prior we have to guess the mean number of breaks. As we do not have explicit information from $\theta$, we have to set it in a rough way. Let's suppose that an expert says that in average, the number of breaks of the wool is around 23. Consequently, we are ready to calculate the parameters based on the previous formula of the expected value (we plug in the value 1 to b):
 
-Now, setting b as ... we get that a is ... and we have our prior set.
+$$\frac{a}{1} = 23 \rightarrow a = 23$$
 
+Now, setting *b* as 1 we get that *a* is 23, then we have our prior set. This means that for each wool there are 23 breaks. Notice that we have defined small values to the parameters as we want that the prior won't be as informative as the data sample.
 
-To obtain the posterior, knowing the conjugate prior of the gamma, we obtain the posterior as: 
+## Posterior distribution
 
+Once we have defined our prior, the next step is to obtain the posterior knowing that the posterior distribution of $\theta$ os the gamma distribution as it follows: 
 
-$$\{\theta|Y_1,...,Y_n\}\sim gamma(a+\sum_{i=1}^{n}Y_i,b+n)$$
+$$\{\theta|Y_1,\dots,Y_n\}\sim gamma(a+\sum_{i=1}^{n}Y_i,b+n)$$
 
+In order to calculate the conditional estimation of the mean and the variance we are going to use the following formulas:
 
-## Plots
+$$\mathop{\mathbb{E}}[\theta|Y_1,\dots,Y_n]=\frac{a + \sum y_i}{b+n} \quad \mathop{\mathbb{V}ar}[\theta|Y_1,\dots,Y_n]=\frac{a + \sum y_i}{b+n} \frac{b+n+1}{b+n} \frac{1}{b+n+1}$$
 
-```{r}
-ggplot(data,aes(x=breaks, fill= wool,alpha=0.5)) + geom_density() + facet_wrap(~tension)
-```
+Let's compute all the things above using R and summarize the results in Table \ref{tab:results.pos}. 
 
+```{r results.pos, echo = FALSE, include=TRUE}
+a <- 23
+b <- 1
 
-# Empirical distributions
+breaks.al <- data %>% dplyr::filter(type=="AL")
+breaks.am <- data %>% dplyr::filter(type=="AM")
+breaks.ah <- data %>% dplyr::filter(type=="AH")
+breaks.bl <- data %>% dplyr::filter(type=="BL")
+breaks.bm <- data %>% dplyr::filter(type=="BM")
+breaks.bh <- data %>% dplyr::filter(type=="BH")
 
-```{r,echo=FALSE}
-g1 = data %>% dplyr::filter(wool=="A" & tension=="L")
-g2 = data %>% dplyr::filter(wool=="A" & tension=="M")
-g3 = data %>% dplyr::filter(wool=="A" & tension=="H")
-g4 = data %>% dplyr::filter(wool=="B" & tension=="L")
-g5 = data %>% dplyr::filter(wool=="B" & tension=="M")
-g6 = data %>% dplyr::filter(wool=="B" & tension=="H")
-```
+n.al <- nrow(breaks.al)
+sy.al <- sum(breaks.al$breaks)
+mu.al <- mean(breaks.al$breaks)
 
+n.am <- nrow(breaks.am)
+sy.am <- sum(breaks.am$breaks)
+mu.am <- mean(breaks.am$breaks)
 
-
-$$Y_{1,1}...Y_{n,1} | \theta \sim i.id. Poisson(\theta_{1})$$
-$$Y_{1,2}...Y_{n,2} | \theta \sim i.id. Poisson(\theta_{2})$$
-$$\vdots$$
-
-$$Y_{1,6}...Y_{n,6} | \theta \sim i.id. Poisson(\theta_{6})$$
-
-
-```{r}
-n1=nrow(g1)
-sy1=sum(g1$breaks)
-mu1=mean(g1$breaks)
-
-n2=nrow(g2)
-sy2=sum(g2$breaks)
-mu2=mean(g2$breaks)
-
-n3=nrow(g3)
-sy3=sum(g3$breaks)
-mu3=mean(g3$breaks)
+n.ah <- nrow(breaks.ah)
+sy.ah <- sum(breaks.ah$breaks)
+mu.ah <- mean(breaks.ah$breaks)
   
-n4=nrow(g4)
-sy4=sum(g4$breaks)
-mu4=mean(g4$breaks)
+n.bl <- nrow(breaks.bl)
+sy.bl <- sum(breaks.bl$breaks)
+mu.bl <- mean(breaks.bl$breaks)
 
-n5=nrow(g5)
-sy5=sum(g5$breaks)
-mu5=mean(g5$breaks)
+n.bm <- nrow(breaks.bm)
+sy.bm <- sum(breaks.bm$breaks)
+mu.bm <- mean(breaks.bm$breaks)
 
-n6=nrow(g6)
-sy6=sum(g6$breaks)
-mu6=mean(g6$breaks)
-```
+n.bh <- nrow(breaks.bh)
+sy.bh <- sum(breaks.bh$breaks)
+mu.bh <- mean(breaks.bh$breaks)
 
+n <- c(n.al, n.am, n.ah, 
+       n.bl, n.bm, n.bh)
+sy <- c(sy.al, sy.am, sy.ah, 
+        sy.bl, sy.bm, sy.bh)
+mu <- c(mu.al, mu.am, mu.ah, 
+        mu.bl, mu.bm, mu.bh)
 
-Without any information of the sample we can assume that the mean number of breaks is 25. Therefore we can assume that our $\theta$ is distributed as $\theta \sim gamma(5,5.2)$
-
-
-```{r}
-a=5
-b=5.2
-
-posterior_mean=function(sy,n){
-  return((a+sy)/(b+n))
+posterior.mean <- function(sy, n){
+  return( (a+sy) / (b+n) )
 }
 
-
-posterior_mode=function(sy,n){
-  return((a+sy-1)/(b+n))
+posterior.variance <- function(sy, n) {
+  return( ((a+sy) / (b+n)) * ((b+n+1) / (b+n)) * (1 / (b+n+1) ))
 }
 
-#posterior mean for group A-L
-posterior_mean(sy1,n1)
-
-#posterior mode for group A-M
-posterior_mode(sy2,n2)
-
-
-#CI 95% for group A-M
-qgamma(c(0.025,0.975),a+sy1,b+n2)
-```
-
-
-
-
-
-```{r}
-modea <- function(x) {
-   return(as.numeric(names(which.max(table(x)))))
+posterior.ci <- function(sy, n) {
+  qgamma(c(0.025,0.975), a+sy, b+n)
 }
 
-a1=modea(g1$breaks)
-a2=modea(g2$breaks)
-a3=modea(g3$breaks)
-a4=modea(g4$breaks)
-a5=modea(g5$breaks)
-a6=modea(g6$breaks)
+# Posterior mean
+pos.mean.al <- posterior.mean(sy.al, n.al)
+pos.mean.am <- posterior.mean(sy.am, n.am)
+pos.mean.ah <- posterior.mean(sy.ah, n.ah)
+pos.mean.bl <- posterior.mean(sy.bl, n.bl)
+pos.mean.bm <- posterior.mean(sy.bm, n.bm)
+pos.mean.bh <- posterior.mean(sy.bh, n.bh)
+pos.mean <- c(pos.mean.al, pos.mean.am, pos.mean.ah, 
+              pos.mean.bl, pos.mean.bm, pos.mean.bh)
 
-vector=c(a1,a2,a3,a4,a5,a6)
-mean(vector)
+# CI 95% for each type
+pos.ci.al <- posterior.ci(sy.al, n.al)
+pos.ci.am <- posterior.ci(sy.am, n.am)
+pos.ci.ah <- posterior.ci(sy.ah, n.ah)
+pos.ci.bl <- posterior.ci(sy.bl, n.bl)
+pos.ci.bm <- posterior.ci(sy.bm, n.bm)
+pos.ci.bh <- posterior.ci(sy.bh, n.bh)
+pos.ci.lw <- c(pos.ci.al[1], pos.ci.am[1], pos.ci.ah[1], 
+            pos.ci.bl[1], pos.ci.bm[1], pos.ci.bh[1])
+pos.ci.up <- c(pos.ci.al[2], pos.ci.am[2], pos.ci.ah[2], 
+            pos.ci.bl[2], pos.ci.bm[2], pos.ci.bh[2])
+
+# Posterior variance
+pos.variance.al <- posterior.variance(sy.al, n.al)
+pos.variance.am <- posterior.variance(sy.am, n.am)
+pos.variance.ah <- posterior.variance(sy.ah, n.ah)
+pos.variance.bl <- posterior.variance(sy.bl, n.bl)
+pos.variance.bm <- posterior.variance(sy.bm, n.bm)
+pos.variance.bh <- posterior.variance(sy.bh, n.bh)
+pos.variance <- c(pos.variance.al, pos.variance.am, pos.variance.ah, 
+                  pos.variance.bl, pos.variance.bm, pos.variance.bh)
+
+pos.res.matrix <- cbind(n, sy, mu, pos.mean, 
+                        pos.ci.lw, pos.ci.up, pos.variance)
+rownames(pos.res.matrix) <- c("AL", "AM", "AH", "BL", "BM", "BH")
+
+knitr::kable(pos.res.matrix, caption = "Posterior results", digits = 2) %>% 
+  column_spec(1, bold=TRUE) %>% row_spec(0, bold=TRUE) %>% 
+  kable_styling(latex_options = "HOLD_position")
+```
+
+In the table above, we can see the first column related to the sample size of each group, the secon associated to the sum of the breaks from the sample of this group, the third is the mean of the breaks from the sample, the forth (low) and the fifth (up) are the confidence intervals associated and the third is the variance associated to the parameter $\theta$ for each group. 
+
+We can see that the *AL* breaks are those ones with the larger mean and the higher variance, in contrast we have the *BH* breaks that are associated with the smaller mean and the shorter variance. Comparing these results with the insights shown in the bar plots of the introduction section, we conclude that the _a posteriori_ information are well informative by the sample data (something that we want as we have to be as impartial as possible).
+
+\newpage
+# Apendix
+
+## Code
+
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+
 
 ```
- We can assume a=23,b=1
-
-
 
 
 
