@@ -7,28 +7,58 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(magrittr)
 ```
 
-## R Markdown
+# Introduction
 
 ```{r}
 library(datasets)
 data=warpbreaks
 ```
 
-We want to provide a conditional estimation on the number of brakes for different types of threads. As we are measuring the number of breaks we can consider that our model follows a poisson distribution, being the count the number of breaks in a whole roll.
+We want to provide a conditional estimation on the number of breaks for different types of threads. Therefore, as the data provided contains observations from different groups of threads, we are going to split them into six different groups. This way we can apply Bayesian Inference to obtain insights for each type of group.
 
-The properties of a poisson are:
+The dataset contains 3 variables, 
+
+- Nb of breaks (continuous variable)
+- Wool, which is categorical variable with levels A and B.
+- Tension. Another categorical variable that indicates the tension of the thread (L,M and H)
+
+As we just mentioned, we are going to split the data into 6 different groups. Therefore we will have one group for wool A with Low tension, another for wool A with Medium tension, wool A with high tension...
+
+Once we have our groups well defined, we can start to apply Bayesian Inference. As we want to have more knowledge about the mean number of breaks during weaving for different configurations, we can model our problem as a Poisson distribution, being the count the number of breaks. Therefore, 
+
+$$Y_{1,1}...Y_{n,1} | \theta_1 \sim i.id. Poisson(\theta_{1})$$
+$$Y_{1,2}...Y_{n,2} | \theta_2 \sim i.id. Poisson(\theta_{2})$$
+$$.$$
+$$.$$
+$$.$$
+
+$$Y_{1,6}...Y_{n,6} | \theta_6 \sim i.id. Poisson(\theta_{6})$$
+
+We also know that for a poisson distribution, both mean and variances are:
 
 $$E[Y|\theta]=\theta$$
 $$Var[Y|\theta]=\theta$$
-From the prior we know that:
-
+However, we do not have any information about $\theta$, therefore we have to estimate it. The only knowledge we have about it is that from the prior we can assume that that:
 
 $$\theta \sim gamma(a,b)$$
+Therefore, we have to assign values for both "a" and "b". For a Gamma distribution we know that:
 
-$$Y_1,...,Y_n | \theta \sim Poisson(\theta)$$
-Within this two function and using the conjugate, we get that:
+$$E[\theta]=\frac{a}{b}$$
+
+From the prior we have to guess the mean number of breaks. As we do not have explicit information from \theta we have to set it in a rough way. For that we are going to use 
+
+....
+
+Now, setting b as ... we get that a is ... and we have our prior set.
+
+
+To obtain the posterior, knowing the conjugate prior of the gamma, we obtain the posterior as: 
+
 
 $$\{\theta|Y_1,...,Y_n\}\sim gamma(a+\sum_{i=1}^{n}Y_i,b+n)$$
 
@@ -42,7 +72,7 @@ ggplot(data,aes(x=breaks, fill= wool,alpha=0.5)) + geom_density() + facet_wrap(~
 
 # Empirical distributions
 
-```{r}
+```{r,echo=FALSE}
 g1 = data %>% dplyr::filter(wool=="A" & tension=="L")
 g2 = data %>% dplyr::filter(wool=="A" & tension=="M")
 g3 = data %>% dplyr::filter(wool=="A" & tension=="H")
@@ -54,15 +84,16 @@ g6 = data %>% dplyr::filter(wool=="B" & tension=="H")
 
 
 $$Y_{1,1}...Y_{n,1} | \theta \sim i.id. Poisson(\theta_{1})$$
-$$Y_{2,1}...Y_{n,2} | \theta \sim i.id. Poisson(\theta_{2})$$
-$$Y_{3,1}...Y_{n,6} | \theta \sim i.id. Poisson(\theta_{6})$$
+$$Y_{1,2}...Y_{n,2} | \theta \sim i.id. Poisson(\theta_{2})$$
+$$\vdots$$
+
+$$Y_{1,6}...Y_{n,6} | \theta \sim i.id. Poisson(\theta_{6})$$
 
 
 ```{r}
 n1=nrow(g1)
 sy1=sum(g1$breaks)
 mu1=mean(g1$breaks)
-mo1=modal(g1$breaks)
 
 n2=nrow(g2)
 sy2=sum(g2$breaks)
