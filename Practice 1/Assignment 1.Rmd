@@ -63,7 +63,6 @@ $$\vdots$$
 
 $$Y_{1_{BH}},\dots ,Y_{n_{BH}} | \theta_{BH} \sim i.i.d. Poisson(\theta_{BH})$$
 
-
 We also know that for a poisson distribution, both mean and variances are:
 
 $$\mathop{\mathbb{E}}[Y|\theta]=\theta \quad \mathop{\mathbb{V}ar}[Y|\theta]=\theta$$
@@ -91,6 +90,29 @@ From the prior we have to guess the mean number of breaks. As we do not have exp
 $$a=529 \quad b=23 $$
  
 Now, setting *b* as 23 we get that *a* is 529, then we have our prior set. This means that in 23 wool there are 529 breaks.
+=======
+
+
+We also know that for a poisson distribution, both mean and variances are:
+
+$$\mathop{\mathbb{E}}[Y|\theta]=\theta \quad \mathop{\mathbb{V}ar}[Y|\theta]=\theta$$
+
+## Prior distribution
+
+However, we do not have any information about $\theta$, it is some unknown number between 0 and $\infty$. Then, we have to defined this parameter using other methods but not insights that come from the sample. The only knowledge we have about it is that from the prior we can assume that:
+
+$$\theta \sim gamma(a,b)$$
+
+In order to implement it, we have to assign values for both parameters *a* and *b*. For a Gamma distribution we know that:
+
+$$\mathop{\mathbb{E}}[\theta]=\frac{a}{b}$$
+
+From the prior we have to guess the mean number of breaks. As we do not have explicit information from $\theta$, we have to set it in a rough way. Let's suppose that an expert says that in average, the number of breaks of the wool is around 23. Consequently, we are ready to calculate the parameters based on the previous formula of the expected value (we plug in the value 1 to b):
+
+$$\frac{a}{1} = 23 \rightarrow a = 23$$
+
+Now, setting *b* as 1 we get that *a* is 23, then we have our prior set. This means that for each wool there are 23 breaks. Notice that we have defined small values to the parameters as we want that the prior won't be as informative as the data sample.
+>>>>>>> main
 
 ## Posterior distribution
 
