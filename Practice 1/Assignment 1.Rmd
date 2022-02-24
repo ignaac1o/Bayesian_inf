@@ -90,12 +90,6 @@ From the prior we have to guess the mean number of breaks. As we do not have exp
 $$a=529 \quad b=23 $$
  
 Now, setting *b* as 23 we get that *a* is 529, then we have our prior set. This means that in 23 wool there are 529 breaks.
-=======
-
-
-We also know that for a poisson distribution, both mean and variances are:
-
-$$\mathop{\mathbb{E}}[Y|\theta]=\theta \quad \mathop{\mathbb{V}ar}[Y|\theta]=\theta$$
 
 ## Prior distribution
 
@@ -112,7 +106,6 @@ From the prior we have to guess the mean number of breaks. As we do not have exp
 $$\frac{a}{1} = 23 \rightarrow a = 23$$
 
 Now, setting *b* as 1 we get that *a* is 23, then we have our prior set. This means that for each wool there are 23 breaks. Notice that we have defined small values to the parameters as we want that the prior won't be as informative as the data sample.
->>>>>>> main
 
 ## Posterior distribution
 
