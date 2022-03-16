@@ -1,0 +1,76 @@
+---
+title: "STAN"
+author: "Ignacio Almodóvar & Luis Ángel Rodríguez García"
+date: "3/16/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shinystan) 
+library(rstan)
+```
+
+# Practice 3 - Logit Regression
+
+For this practice we are going to use Stan to derive the posterior distribution of $\alpha$ and $\beta$ for the observed sample given in the problem. STAN is a probabilistic programming language that provides full Bayesian inference for continuous variable models that can use Markov Chain Monte Carlo techniques. This allows to compute large hierarchical models to obtain several samples from the posteriors.
+
+Stan can be called from different programming languages, such as R and Python. It can be seen as a program inside this platforms and therefore it need to be called from them specifying different parameters of the model that we want to compute. On this program we must provide at least the following three blocks:
+
+ - Data: Will read the external information of the model. In our case, the sample given in the problem.
+ - Parameters: That is the sample space that the posterior parameters can take.
+ - Model: The posterior distribution that our parameters follow.
+ 
+ Notice that, eventhough it is not mandatory to specify, it can also take other blocks such as transformed data, transformed parameters and generated quantities. 
+
+For our problem, as we want to classify the mission of a plane (binary variable) for the number of hits, we will assume an hierarchical model where:
+
+$$Y|X, p \sim Ber(p)$$
+$$logit(p)=\alpha + \beta X$$
+$$\alpha \sim N(0,10)$$
+$$\beta \sim Flat \space \pi(\beta)=1$$
+Building this hierarchical model in our STAN program we obtain the following estimation for the posterior distribution of $\alpha$ and $\beta$.
+
+
+```{r,include=FALSE}
+mod.stan = "
+data {
+  int<lower=0> N;
+  vector[N] x;
+  int<lower=0,upper=1> y[N];
+}
+parameters {
+  real alpha;
+  real beta;
+}
+model {
+  alpha ~ normal(0,10);
+  y ~ bernoulli_logit(alpha + beta * x);
+}
+"
+
+y=c(1,0,1,1,0,0)  # for actions (1=success)
+x=c(3,5,2,5,10,6) # for the number of bets
+fit = stan(model_code = mod.stan, data = list(y = y, x = x, N = length(y)), iter = 2000)
+```
+
+
+```{r,echo=FALSE}
+print(fit, pars = c("beta", "alpha"))
+```
+
+Rhat is a convergence diagnostic, which compares the between and within-chain estimates for model parameters and other univariate quantities of interest. If chains have not mixed well, Rhat will be larger than 1. As we obtained one, we can say that it converges for both estimators.
+
+STAN also can execute a shiny app that provides more detailed information about the different samples that he has computed and its results. All these plots can be seen in the appendix below. Notice that there is a plot indicating the different samples computed. The fact that these sample can be considered "uniform" is a good indicator to consider correct the estimation provided for the posterior.
+
+
+```{r,eval=FALSE,include=FALSE}
+launch_shinystan(fit)
+```
+
+
+
+
+
+
+
